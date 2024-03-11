@@ -44,6 +44,12 @@ public class MainActivity extends AppCompatActivity {
         currentTimeText = findViewById(R.id.currentTimeText);
         updateCurrentTimeTextView(currentTime);
 
+        // It the number or identifier
+        // for alarm 1 you can use 100 for alarm 2 you can use like 150 or whatever you want.
+        // you can also use 1, for alarm 1, 2 for alarm 2 and so on
+        Integer alarmIdentifier = 1;
+
+        updateOldAlarmOnReopen(alarmIdentifier);
 
         setAlarmButton.setOnClickListener(v -> {
             Calendar now = Calendar.getInstance();
@@ -57,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
 //             calendar.add(Calendar.SECOND, 15); // Adds 10 seconds to the current time
 
             if (calendar.after(now)) {
-                setAlarm(calendar.getTimeInMillis());
+                setAlarm(calendar.getTimeInMillis(), alarmIdentifier);
                 updateAlarmTextView(calendar);
 
                 Log.d("MainActivity", "Alarm set for: " + formatTime(calendar));
@@ -67,16 +73,53 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+
+        Button cancelAlarmButton = findViewById(R.id.cancelAlarmButton);
+        cancelAlarmButton.setOnClickListener(v ->cancelAlarm(alarmIdentifier));
+
     }
 
 
-    private void setAlarm(long timeInMillis) {
+    private void setAlarm(long timeInMillis, int identifier) {
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         Intent intent = new Intent(this, AlarmBroadcastReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, identifier, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
         alarmManager.setExact(AlarmManager.RTC_WAKEUP, timeInMillis, pendingIntent);
 
+        // Save alarm set time to SharedPreferences
+        getSharedPreferences(getPackageName()+"AlarmOpenSourceApp", MODE_PRIVATE)
+                .edit()
+                .putLong("alarmTime" + identifier, timeInMillis)
+                .apply();
+    }
+
+    private void cancelAlarm(int identifier) {
+        Intent intent = new Intent(this, AlarmBroadcastReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, identifier, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        alarmManager.cancel(pendingIntent);
+
+        // Clear saved alarm time from SharedPreferences
+        getSharedPreferences(getPackageName() + "AlarmOpenSourceApp", MODE_PRIVATE)
+                .edit()
+                .remove("alarmTime" + identifier)
+                .apply();
+
+        alarmTimeTextView.setText("Alarm not set");
+    }
+    private void updateOldAlarmOnReopen(int alarmIdentifier){
+
+        // Check if there is a saved alarm time and display it
+        long savedAlarmTime = getSharedPreferences(getPackageName()+"AlarmOpenSourceApp", MODE_PRIVATE).getLong("alarmTime" + alarmIdentifier, 0);
+
+        if (savedAlarmTime != 0) {
+            // There is a saved alarm time, update the TextView
+            Calendar alarmTime = Calendar.getInstance();
+            alarmTime.setTimeInMillis(savedAlarmTime);
+            updateAlarmTextView(alarmTime);
+        }
     }
 
     private void updateCurrentTimeTextView(Calendar calendar){
