@@ -148,14 +148,14 @@ public class AlarmAlertActivity extends Activity {
     private void snoozeAlarm() {
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(this, AlarmBroadcastReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, MainActivity.alarmIdentifier, intent, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
 
         // Calculate the snooze time
         Calendar calendar = Calendar.getInstance();
         calendar.add(Calendar.SECOND, SNOOZE_TIME); // Snooze Time in Seconds
 
         // Set the snooze alarm
-        alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
+        alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
 
         // Stop the current alarm
         stopAlarm();
